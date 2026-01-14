@@ -3,18 +3,30 @@ import pickle
 import streamlit as st
 import requests
 
-# Page config
+
 st.set_page_config(
     page_title="Movie Recommender System",
     layout="wide"
 )
 
-# -------------------------
-# Load model safely
-# -------------------------
+TMDB_API_KEY = "d2feb1e849ed39dd04c3f31b5392bbc2"  
+TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w500"
+
+def get_movie_details(title):
+    url = f"https://api.themoviedb.org/3/search/movie?api_key={TMDB_API_KEY}&query={title}"
+    response = requests.get(url)
+    data = response.json()
+    if data['results']:
+        movie = data['results'][0]
+        poster = TMDB_IMAGE_URL + movie['poster_path'] if movie['poster_path'] else None
+        description = movie['overview'] if movie['overview'] else "No description available."
+        return poster, description
+    return None, "No description available."
+
+
 @st.cache_resource
 def load_model():
-    st.info("⏳ Downloading model from Hugging Face. Please wait...")
+   
 
     os.makedirs("model", exist_ok=True)
 
@@ -24,7 +36,7 @@ def load_model():
     movie_url = "https://huggingface.co/Sakkshhiii/movie-recommender-model/resolve/main/movie_list.pkl"
     sim_url = "https://huggingface.co/Sakkshhiii/movie-recommender-model/resolve/main/similarity.pkl"
 
-    # Download if not present
+ 
     if not os.path.exists(movie_path):
         with open(movie_path, "wb") as f:
             f.write(requests.get(movie_url, timeout=300).content)
@@ -33,23 +45,21 @@ def load_model():
         with open(sim_path, "wb") as f:
             f.write(requests.get(sim_url, timeout=600).content)
 
-    # Load pickle files
+    
     movies = pickle.load(open(movie_path, "rb"))
     similarity = pickle.load(open(sim_path, "rb"))
 
-    st.success("✅ Model loaded successfully!")
+   
     return movies, similarity
 
 movies, similarity = load_model()
 
-# -------------------------
-# Recommendation function
-# -------------------------
+
 def recommend(movie_name):
     idx = movies[movies["title"] == movie_name].index[0]
     distances = similarity[idx]
 
-    # Top 5 recommendations
+    
     movies_list = sorted(
         list(enumerate(distances)),
         reverse=True,
@@ -59,12 +69,10 @@ def recommend(movie_name):
     recommended = [movies.iloc[i[0]].title for i in movies_list]
     return recommended
 
-# -------------------------
-# Streamlit UI
-# -------------------------
+
 st.title("🎬 Movie Recommender System")
 
-# Select movie from dropdown
+
 selected_movie = st.selectbox(
     "Select a movie you like:",
     movies["title"].values
@@ -75,3 +83,4 @@ if st.button("Recommend"):
     st.subheader("Recommended Movies:")
     for i, rec in enumerate(recommendations, 1):
         st.write(f"{i}. {rec}")
+
