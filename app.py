@@ -81,6 +81,17 @@ selected_movie = st.selectbox(
 if st.button("Recommend"):
     recommendations = recommend(selected_movie)
     st.subheader("Recommended Movies:")
+
     for i, rec in enumerate(recommendations, 1):
-        st.write(f"{i}. {rec}")
+        poster, description = get_movie_details(rec)
+        cols = st.columns([1,3])
+        with cols[0]:
+            if poster:
+                st.image(poster, use_column_width=True)
+            else:
+                st.text("No poster available")
+        with cols[1]:
+            st.markdown(f"**{i}. {rec}**")
+            st.write(description)
+
 
